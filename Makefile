@@ -5,7 +5,7 @@ INCDIR += -I$(shell echo $(VMCWORKDIR)/detectors/emc/EmcData)
 INCDIR += -I$(shell echo $(VMCWORKDIR)/detectors/emc/EmcTools)
 INCDIR += -I$(shell echo $(SIMPATH)/include)
 INCDIR += -I./src
-LIBDIR = -L$(shell echo ${VMCWORKDIR}/buildpanda/lib) -L$(shell echo $(SIMPATH)/lib) -L./lib
+LIBDIR = -L$(shell echo ${VMCWORKDIR}/panda/lib) -L$(shell echo $(SIMPATH)/lib) -L./lib
 #vpath %.hh ./src
 CC = g++ $(ROOTLIB) $(INCDIR) $(LIBDIR)
 

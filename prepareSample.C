@@ -93,7 +93,7 @@ int main()
   boost::archive::xml_oarchive out_a(ofs);
   out_a << boost::serialization::make_nvp("xtalmap", _xtalDef);
 
-  return 0;
+  //return 0;
 
 
 
@@ -104,7 +104,7 @@ int main()
   int cpnr;
   cout<<"create root files and tree .."<<endl;
   // output data
-  TFile* fout = new TFile("preparedSample.root","recreate");
+  TFile* fout = new TFile("preparedSample2.root","recreate");
   //cout<<"create root files and tree ..."<<endl;
   TTree* tpi0 = new TTree("candidates","pi0Candidates");
   //cout<<"create root files and tree ...."<<endl;
@@ -172,7 +172,8 @@ int main()
 			  tmppi0->fraction = maxDigi1->GetEnergy()/Ei;
 			  tmppi0->fraction2 = maxDigi2->GetEnergy()/Ej;
 			  for (int idigi=0; idigi<clsi->DigiList().size(); idigi++) {
-	 		    PndEmcDigi* digi =  (PndEmcDigi*)fDigiArray->At(idigi);
+			    int id = clsi->DigiList().at(idigi);
+	 		    PndEmcDigi* digi =  (PndEmcDigi*)fDigiArray->At(id);
 			    tmphit.cpnr = digi->GetDetectorId();
 			    tmphit.E_dep = digi->GetEnergy();
 			    tmphit.X = digi->where().X();
@@ -182,13 +183,14 @@ int main()
 			    //tmppi0.this_bump.push_back(idigi);
 			  }
 			  for (int idigi2=0; idigi2<clsj->DigiList().size(); idigi2++) {
-	 		    PndEmcDigi* digi = (PndEmcDigi*) fDigiArray->At(idigi2);
+			    int id = clsj->DigiList().at(idigi2);
+	 		    PndEmcDigi* digi = (PndEmcDigi*) fDigiArray->At(id);
 			    tmphit.cpnr = digi->GetDetectorId();
 			    tmphit.E_dep = digi->GetEnergy();
 			    tmphit.X = digi->where().X();
 			    tmphit.Y = digi->where().Y();
 			    tmphit.Z = digi->where().Z();
-			    tmppi0->this_bump.push_back(tmphit);
+			    tmppi0->associated_bump.push_back(tmphit);
 	
 			    //tmppi0.associated_bump.push_back(idigi2);
 			  }
