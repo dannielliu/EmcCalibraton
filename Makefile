@@ -5,7 +5,7 @@ INCDIR += -I$(shell echo $(VMCWORKDIR)/detectors/emc/EmcData)
 INCDIR += -I$(shell echo $(VMCWORKDIR)/detectors/emc/EmcTools)
 INCDIR += -I$(shell echo $(SIMPATH)/include)
 INCDIR += -I./src
-LIBDIR = -L$(shell echo ${VMCWORKDIR}/build/lib) -L$(shell echo $(SIMPATH)/lib) -L./lib
+LIBDIR = -L$(shell echo ${VMCWORKDIR}/buildpanda/lib) -L$(shell echo $(SIMPATH)/lib) -L./lib
 #vpath %.hh ./src
 CC = g++ $(ROOTLIB) $(INCDIR) $(LIBDIR)
 
@@ -17,6 +17,7 @@ all: prepareSample ECalStandalone
 	$(CC) $^ -lEmc -lboost_serialization -o $@
 
 lib/libEmcCalibDataModel.so: src/EmcCalibDataModelDict.cxx
+	mkdir -p lib
 	g++ ${INCDIR} -o $@ -c $^
 	cp src/EmcCalibDataModelDict_rdict.pcm lib/
 

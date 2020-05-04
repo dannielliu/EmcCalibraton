@@ -22,6 +22,9 @@
  #include "EmcCalibDataModel.hh"
  #include "EmcCalibIO.hh"
  
+ #include <iostream>
+ using namespace std;
+
  class EmcCalibHelper {
  
        //--------------------

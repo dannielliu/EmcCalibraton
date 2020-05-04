@@ -109,6 +109,10 @@
        _rootfile_path = "root/";
        minimizer = 2;
  
+       params[0] = 4.071;
+       params[1] = 0.678;
+       params[2] = 1.0;
+
        b_init = false;
  
        _subdetector = all;
@@ -679,7 +683,8 @@
  
                    for (int i = 0; i < fit_vec.size(); i++) {
                          if (theCalibIO->is_centralXtal(fit_vec.at(i).cpnr2)) {
-                               result *= do_reco(shift, cpnr, calib_map, fit_vec.at(i));
+                               //result *= do_reco(shift, cpnr, calib_map, fit_vec.at(i));
+                               result *= do_reco(shift, cpnr, calib_map, fit_vec.at(i), true);
                          }
                    }
  
@@ -723,9 +728,6 @@
  
        if (result == 0) {
              hist.m_gg = sqrt(shift * fraction + 1. - fraction) * sqrt(corr_g2) * hist.m_gg; 
- 
- 
- 
              result = 1;
        }
  
@@ -739,6 +741,158 @@
        return result;
  }
  
+ int EmcCalibration::do_reco(
+             float &shift,
+             int cpnr,
+             std::map<const int, cal_store> &calib_map
+             ,entry &hist, bool all_hit) {
+
+       if (!all_hit) return do_reco( shift, cpnr, calib_map, hist);
+
+       int result = 0;
+ 
+       int nhit1 = hist.this_bump.size();
+       int nhit2 = hist.associated_bump.size();
+       double ecls1 = 0.0;
+       double ecls2 = 0.0;
+       double eseed1 = 0.0;
+       double eseed2 = 0.0;
+       // update hit energy
+       for (int ih=0; ih<nhit1; ih++) {
+         int cp = hist.this_bump.at(ih).cpnr;
+	 double factor = 1.0;
+	 if (calib_map.find(cp)!=calib_map.end()) factor = ( calib_map[cp].back().value - 1.0) * _suppression + 1.0;
+	 hist.this_bump.at(ih).E_dep *= factor;
+	 ecls1 += hist.this_bump.at(ih).E_dep;
+	 if (cp == cpnr) eseed1 = hist.this_bump.at(ih).E_dep;
+       }
+       for (int ih=0; ih<nhit2; ih++) {
+         int cp = hist.associated_bump.at(ih).cpnr;
+	 double factor = 1.0;
+	 if (calib_map.find(cp)!=calib_map.end()) factor = ( calib_map[cp].back().value - 1.0) * _suppression + 1.0;
+	 hist.associated_bump.at(ih).E_dep *= factor;
+	 ecls2 += hist.associated_bump.at(ih).E_dep;
+	 if (cp == hist.cpnr2) eseed2 = hist.associated_bump.at(ih).E_dep;
+       }
+       // update hit position
+       TVector3 where1, where2;
+       liloWhere(where1, hist.this_bump);
+       liloWhere(where2, hist.associated_bump);
+       hist.angle = where1.Angle(where2);
+       hist.m_gg  = sqrt(2.0*ecls1*ecls2*(1-cos(hist.angle)));
+       if (eseed1>1e-5) hist.fraction  = eseed1/ecls1;
+       else {
+             stringstream o;
+             o << "EmcCalibration::do_reco(): energy of seed1 is too small" << eseed1 << " < " << 1e-5 ;
+             theCalibIO->logger(3, o);
+       }
+       if (eseed2>1e-5) hist.fraction2 = eseed2/ecls2;
+       else {
+             stringstream o;
+             o << "EmcCalibration::do_reco(): energy of seed2 is too small" << eseed2 << " < " << 1e-5 ;
+             theCalibIO->logger(3, o);
+       }
+
+       result = 1;
+ 
+ 
+       return result;
+ }
+ 
+ int EmcCalibration::liloWhere(TVector3 &where, std::vector<hit> bump){
+	Double_t offsetParmA=params[0];
+	Double_t offsetParmB=params[1];
+	Double_t offsetParmC=params[2];
+
+	//const double lClusEnergy=Energy();
+	
+	//assert(lClusEnergy!=0);
+	double lClusEnergy = 0.0;
+	std::vector<hit>::const_iterator current;
+	int nhit = bump.size();
+	for (current=bump.begin();current!=bump.end();++current)
+	{
+	       hit tmphit = *current; 
+	       lClusEnergy += tmphit.E_dep;
+	}
+	const double lOffset=
+		offsetParmA-offsetParmB*exp(-offsetParmC*pow(lClusEnergy,1.171)) * pow(lClusEnergy,-0.534);
+	
+	TVector3 lLiloPoint( 1, 1, 1 );
+	
+	TVector3 lLinSum( 0, 0, 0 );
+	TVector3 lLogSum( 0, 0, 0 );
+	
+	double lLogWeightSum=0;
+	int lLogNum=0;
+	
+	bool lLogSecondTheta  = false;
+	bool lLogSecondPhi    = false;
+	int  lLogFirstTheta   = -666;
+	int  lLogFirstPhi     = -666;
+	
+	//std::vector<Int_t>::const_iterator current;
+	//std::vector<hit>::const_iterator current;
+	//int nhit = bump.size();
+	for (current=bump.begin();current!=bump.end();++current)
+	{
+	        hit tmphit = *current;
+		//const TVector3 lDigiWhere=lDigi->where();
+		const TVector3 lDigiWhere(tmphit.X, tmphit.Y, tmphit.Z);
+		TVector3 pos(tmphit.X, tmphit.Y, tmphit.Z);
+		const int lDigiTheta = (int)(pos.Theta()/3.14*360);
+		const int lDigiPhi   = (int)(pos.Phi()/3.14*360);
+		//const int lDigiTheta=lDigi->GetThetaInt();
+		//const int lDigiPhi=lDigi->GetPhiInt();
+		const double lDigiEnergy=tmphit.E_dep;
+		const double lLinWeight=lDigiEnergy/lClusEnergy;
+		const double lLogWeight=lOffset+log(lLinWeight);
+		
+		lLinSum+=lLinWeight*lDigiWhere;
+		if(lLogWeight>0)
+		{
+			lLogSum+=lLogWeight*lDigiWhere;
+			lLogWeightSum+=lLogWeight;
+			lLogNum++;
+			
+			if(lLogNum==1)
+			{ 
+					lLogFirstTheta=lDigiTheta;
+					lLogFirstPhi=lDigiPhi;
+			}
+			else
+			{
+				if(!lLogSecondTheta&&lDigiTheta!=lLogFirstTheta) 
+					lLogSecondTheta=true;
+				if(!lLogSecondPhi&&lDigiPhi!=lLogFirstPhi) 
+					lLogSecondPhi=true;
+			}
+		}
+	}
+  
+	if(lLogNum>0) lLogSum*=1./lLogWeightSum;
+	
+	
+	lLiloPoint.SetTheta(lLogSecondTheta?lLogSum.Theta():lLinSum.Theta());
+	lLiloPoint.SetPhi(lLogSecondPhi?lLogSum.Phi():lLinSum.Phi());
+	
+	
+	// First, find out if the point is outside the crystal.
+	const TVector3 lLiloVector = lLiloPoint;
+	if (lLogNum > 1) {
+		// Use logarithmic centroid position
+		lLiloPoint.SetMag(lLogSum.Mag());
+	} else {
+		// Use linear centroid position
+		lLiloPoint.SetMag(lLinSum.Mag());
+	}
+	
+        where = lLiloPoint;
+
+	return 1;
+
+ }
+
  int EmcCalibration::globalShift(
              float &mean,
              std::map<const int, cal_store> &calib_map

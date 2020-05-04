@@ -122,6 +122,8 @@
        const char* _rootfile_path;
        std::vector<parameter> _par;
        parameter _toCalib;
+
+       double params[3]; // parameters for the offset of log weight where
  
  
  
@@ -147,7 +149,11 @@
                    std::vector<int> &xtal_index);
  
        int do_reco(float &shift, int cpnr, std::map<const int, cal_store> &calib_map, entry &hist);
- 
+       int do_reco(float &shift, int cpnr, std::map<const int, cal_store> &calib_map, entry &hist, bool allhit);
+
+       // recalculate where
+       int liloWhere(TVector3 &where, std::vector<hit> bump);
+
        int globalShift(
                    float &mean,
                    std::map<const int, cal_store> &calib_map,
