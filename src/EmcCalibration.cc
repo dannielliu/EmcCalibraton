@@ -146,6 +146,7 @@
  }
  
  void EmcCalibration::initRootOutput() {
+ cout<<"test -------------------------------"<<endl;
        string file = string(_rootfile_path);
        stringstream file_sst;
        file_sst << "EmcCalibOutput_minimizer" << minimizer;
@@ -158,11 +159,14 @@
        stringstream o;
        o << "EmcCalibration::initRootOutput(): root output will be written in " << file;
        theCalibIO->logger(3, o);
+ cout<<"test ------------------------------- 1 "<<endl;
+       theCalibIO->logger(3, "12345");
        tuple_xtal =
                    new TNtuple(
                                "xtal",
                                "xtal",
                                "cpnr:value:error:relerror:sterror:tot_value:nentries:iterations:cal_value:cond_range:cond_prv");
+ cout<<"test ------------------------------- 22"<<endl;
        tuple_iter = new TNtuple("iter", "iter", "iteration:mean:var:n_xtal:varFrac:cond_var");
        tuple_corr = new TNtuple("corr", "corr",
                    "iteration:cpnr:cpnr2:shift:fraction:cpnr2_corr:mgg:corr2_range:subDet:frac2");
@@ -386,10 +390,13 @@
  
        theCalibIO->getXtalIndex(_subdetector, xtal_index);
        
+       //setMeanShift(0.002); // set mean shift, by Dong
        //if (!b_init) { 
        if (b_init) { 
              result = theCalibIO->loadCalibMap(calib_map);
+             theCalibIO->logger(3, "do correction after load map?.");
 	     if (result == 1) do_correction(0, calib_map, xtal_index);
+             theCalibIO->logger(3, "do correction after load map.");
        }
  
  
@@ -397,7 +404,8 @@
        while (current_iteration <= _maxIterations) {
              theCalibIO->timeOutput(1, "EmcCalibration::calibrate() starting iteration at");
              i_gC = getConstants(mean, var, calib_map, xtal_index); 
-             current_iteration++;
+             theCalibIO->logger(3, "getConstants done.");
+	     current_iteration++;
              if (i_gC == 0) {
                    stringstream o;
                    o << "EmcCalibration::calibrate(): error occurred at iteration = " << current_iteration;
@@ -428,13 +436,16 @@
                    }
              }
  
+             theCalibIO->logger(3, "do correction.");
              do_correction(current_iteration, calib_map, xtal_index); 
+             theCalibIO->logger(3, "do correction done.");
  
              stringstream o;
              o << "EmcCalibration::calibrate(): iteration = " << current_iteration << ", mean = " << mean
-                         << ", var = " << var;
+                         << ", var = " << var ;
              theCalibIO->logger(3, o);
  
+             theCalibIO->checkCacheSize();
        }
  
        if (current_iteration >= _maxIterations) {
@@ -623,6 +634,7 @@
        if (n > 0)
              result = 1;
  
+       // condition to stop
        if (fabs(new_mean - 1.) <= _meanShift) { 
              stringstream o;
              o << "EmcCalibration::getConstants(): interrupt: mean = " << new_mean << " < " << _meanShift

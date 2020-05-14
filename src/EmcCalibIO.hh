@@ -123,6 +123,8 @@
        }
  
        float getCorrSQL(int cpnr);
+
+       void checkCacheSize();
  
  private:
        void init();
