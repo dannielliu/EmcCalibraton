@@ -305,6 +305,7 @@
 		det = iter_Def->second.subdetector;
 		cal_store store;
 		data tmpdata(1.0, 1.0);
+		
 		store.total = tmpdata;
 		store.data_vec.push_back(tmpdata);
 		store.iterations = 0;
@@ -368,9 +369,8 @@
        for (it = calib_map_data.begin(); it != calib_map_data.end(); it++) {
              cal_store store;
 	     store.total = it->second;
-	     store.iterations = 0;
 	     store.data_vec.push_back(it->second);
-	     
+	     store.iterations = 0;
 	     calib_map[it->first] = store;
 
 
@@ -396,7 +396,10 @@
        for (it = calib_map.begin(); it != calib_map.end(); it++) {
              val = (*it).second.total;
              if (isnan(val.error)) { //for serialization: set NaN results of error to -1
-                   val.error = -1.;
+                   //val.value = 1.;
+		   if (isnan(val.value)) val.value = 1.0;
+                   val.error = -1.0;
+                   tmp_map[(*it).first] = val;
              }
              if (!isnan(val.value)) { //save only if value is not NaN
                    tmp_map[(*it).first] = val;
@@ -899,9 +902,25 @@
        delete m_entry;
        file->Close();
 
+       checkCacheSize();
+
        return 1;
  }
 
+  void EmcCalibIO::checkCacheSize()
+ {
+
+       // check the number of cached events
+       std::map<const int, std::vector<entry> >::iterator it_map;
+       int total_events=0;
+       for (it_map = histo_cache->begin(); it_map != histo_cache->end(); it_map++) {
+            total_events += it_map->second.size();
+       }
+
+       stringstream o;
+       o << "EmcCalibIO::checkCacheSize(): total events = " << total_events << " for "<< histo_cache->size()<<" crystals.";
+       logger(3, o);
+ }
 
  void EmcCalibIO::cacheDataSQL(const int cpnr, entry &eintrag) {
        (*histo_cache)[cpnr].push_back(eintrag);

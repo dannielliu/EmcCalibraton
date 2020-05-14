@@ -39,7 +39,8 @@
  
  int main() {
  
-       cal = EmcCalibFactory::getEmcCalib("Minuit2", "vprt"); //Minuit     Minuit2     Geneva
+       cal = EmcCalibFactory::getEmcCalib("Minuit2", "vpt"); //Minuit     Minuit2     Geneva
+       //cal = EmcCalibFactory::getEmcCalib("Minuit2", "vprt"); //Minuit     Minuit2     Geneva
  //    cal = EmcCalibFactory::getEmcCalib("Geneva", "vprt");
  
        cal->setFilePath("./EmcCalibStudies/EmcCalibrationData3.dat");
